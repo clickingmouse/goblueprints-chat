@@ -9,6 +9,10 @@ import (
 	"sync"
 	"text/template"
 
+	"github.com/stretchr/objx"
+
+	//"github.com/stretchr/objx"
+
 	"github.com/clickingmouse/blueprints/chat/trace"
 )
 
@@ -24,8 +28,19 @@ func (t *templateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	t.once.Do(func() {
 		t.templ = template.Must(template.ParseFiles(filepath.Join("templates", t.filename)))
 	})
+
+	//data := map[string]interface{}{
+	data := map[string]interface{}{
+		"Host": r.Host,
+	}
+
+	if authCookie, err := r.Cookie("auth"); err == nil {
+		data["UserData"] = objx.MustFromBase64(authCookie.Value)
+	}
+
 	//t.templ.Execute(w, nil)
-	t.templ.Execute(w, r)
+	//t.templ.Execute(w, r)
+	t.templ.Execute(w, data)
 
 }
 
@@ -33,6 +48,8 @@ func main() {
 	var addr = flag.String("addr", ":8080", "The addr of the application.")
 	flag.Parse()
 	//
+	//setup gomniauth
+
 	r := newRoom()
 
 	// removable to turn off tracer
@@ -45,7 +62,10 @@ func main() {
 	// })
 
 	// root
-	http.Handle("/", &templateHandler{filename: "chat.html"})
+	//http.Handle("/", &templateHandler{filename: "chat.html"})
+	http.Handle("/chat", MustAuth(&templateHandler{filename: "chat.html"}))
+	http.Handle("/login", &templateHandler{filename: "login.html"})
+	http.HandleFunc("/auth/", loginHandler)
 	http.Handle("/room", r)
 	// get the room going
 	go r.run()

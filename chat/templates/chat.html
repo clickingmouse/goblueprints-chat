@@ -13,6 +13,8 @@
   <body>
     <ul id="messages"></ul>
     <form id="chatbox">
+      {{.UserData.name}}:<br />
+
       <textarea></textarea>
       <input type="submit" value="Send" />
     </form>
@@ -34,7 +36,9 @@
             return false;
           }
           console.log(msgBox.val());
-          socket.send(msgBox.val());
+          //socket.send(msgBox.val());
+          socket.send(JSON.stringify({ message: msgBox.val() }));
+
           msgBox.val("");
           return false;
         });
@@ -49,8 +53,16 @@
           };
           socket.onmessage = function(e) {
             console.log("e->", e.data);
+            var msg = JSON.parse(e.data);
+            console.log("msg->", msg);
             //messages.append($("<li>").text(e.data));
-            messages.append($("<li>").text(e.data));
+            //messages.append($("<li>").text(e.data));
+            messages.append(
+              $("<li>").append(
+                $("<strong>").text(msg.Name + ": "),
+                $("<span>").text(msg.Message)
+              )
+            );
           };
         }
       });

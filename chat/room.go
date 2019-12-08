@@ -4,6 +4,8 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/stretchr/objx"
+
 	"github.com/clickingmouse/blueprints/chat/trace"
 	"github.com/gorilla/websocket"
 )
@@ -12,7 +14,8 @@ type room struct {
 	//forward is a channel that holds incoming messages
 	//that should be forwarded to other clients
 
-	forward chan []byte
+	//forward chan []byte
+	forward chan *message
 
 	// join is a channel for clients wishing to join the room
 	join chan *client
@@ -29,7 +32,9 @@ type room struct {
 // newRoom makes a new room
 func newRoom() *room {
 	return &room{
-		forward: make(chan []byte),
+		//forward: make(chan []byte),
+		forward: make(chan *message),
+
 		join:    make(chan *client),
 		leave:   make(chan *client),
 		clients: make(map[*client]bool),
@@ -53,6 +58,7 @@ func (r *room) run() {
 
 		case msg := <-r.forward:
 			//foward message to all clients
+			r.tracer.Trace("Message received: ", string(msg.Message))
 			for client := range r.clients {
 				client.send <- msg
 				r.tracer.Trace("-- sent to client")
@@ -72,12 +78,20 @@ func (r *room) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	socket, err := upgrader.Upgrade(w, req, nil)
 	if err != nil {
 		log.Fatal("serveHTTP:", err)
+		return
 	}
-
+	authCookie, err := req.Cookie("auth")
+	if err != nil {
+		log.Fatal("Failed to get auth cookie:", err)
+		return
+	}
 	client := &client{
 		socket: socket,
-		send:   make(chan []byte, messageBufferSize),
-		room:   r,
+		//send:   make(chan []byte, messageBufferSize),
+		send: make(chan *message, messageBufferSize),
+
+		room:     r,
+		userData: objx.MustFromBase64(authCookie.Value),
 	}
 	r.join <- client
 	defer func() { r.leave <- client }()
