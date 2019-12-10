@@ -11,6 +11,11 @@ import (
 
 	"github.com/stretchr/objx"
 
+	"github.com/stretchr/gomniauth"
+	"github.com/stretchr/gomniauth/providers/facebook"
+	"github.com/stretchr/gomniauth/providers/github"
+	"github.com/stretchr/gomniauth/providers/google"
+
 	//"github.com/stretchr/objx"
 
 	"github.com/clickingmouse/blueprints/chat/trace"
@@ -50,8 +55,12 @@ func main() {
 	//
 	//setup gomniauth
 
-	r := newRoom()
 
+	//r := newRoom()
+
+	//r := newRoom(UseAuthAvatar)
+
+	r := newRoom(UseGravatar)
 	// removable to turn off tracer
 	r.tracer = trace.New(os.Stdout)
 
@@ -67,6 +76,18 @@ func main() {
 	http.Handle("/login", &templateHandler{filename: "login.html"})
 	http.HandleFunc("/auth/", loginHandler)
 	http.Handle("/room", r)
+
+	http.HandleFunc("/logout", func(w http.ResponseWriter, r *http.Request) {
+		http.SetCookie(w, &http.Cookie{
+			Name:   "auth",
+			Value:  "",
+			Path:   "/",
+			MaxAge: -1,
+		})
+		w.Header().Set("Location", "/chat")
+		w.WriteHeader(http.StatusTemporaryRedirect)
+	})
+
 	// get the room going
 	go r.run()
 

@@ -14,6 +14,9 @@ type authHandler struct {
 }
 
 // authHandler method
+// todo: make it cope with empty value & empty cookie case
+// if cookie, err := r.Cookie("auth"); err ==
+// http.ErrNoCookie || cookie.Value == ""
 func (h *authHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	_, err := r.Cookie("auth")
 	if err == http.ErrNoCookie {
@@ -79,7 +82,9 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		authCookieValue := objx.New(map[string]interface{}{
-			"name": user.Name(),
+			"name":       user.Name(),
+			"avatar_url": user.AvatarURL(),
+			"email":      user.Email(),
 		}).MustBase64()
 		http.SetCookie(w, &http.Cookie{
 			Name:  "auth",
