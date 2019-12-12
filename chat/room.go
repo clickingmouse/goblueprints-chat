@@ -33,7 +33,9 @@ type room struct {
 }
 
 // newRoom makes a new room
-func newRoom(avatar Avatar) *room {
+//func newRoom(avatar Avatar) *room {
+func newRoom() *room {
+
 	return &room{
 		//forward: make(chan []byte),
 		forward: make(chan *message),
@@ -42,7 +44,7 @@ func newRoom(avatar Avatar) *room {
 		leave:   make(chan *client),
 		clients: make(map[*client]bool),
 		tracer:  trace.Off(),
-		avatar:  avatar,
+		//		avatar:  avatar,
 	}
 }
 

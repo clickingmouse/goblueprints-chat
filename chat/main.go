@@ -11,15 +11,17 @@ import (
 
 	"github.com/stretchr/objx"
 
-	"github.com/stretchr/gomniauth"
-	"github.com/stretchr/gomniauth/providers/facebook"
-	"github.com/stretchr/gomniauth/providers/github"
-	"github.com/stretchr/gomniauth/providers/google"
-
 	//"github.com/stretchr/objx"
 
 	"github.com/clickingmouse/blueprints/chat/trace"
 )
+
+// set the active Avatar implementation
+//var avatars Avatar = UseFileSystemAvatar
+var avatars Avatar = TryAvatars{
+	UseFileSystemAvatar,
+	UseAuthAvatar,
+	UseGravatar}
 
 //template represents a single template
 type templateHandler struct {
@@ -55,12 +57,15 @@ func main() {
 	//
 	//setup gomniauth
 
-
 	//r := newRoom()
 
 	//r := newRoom(UseAuthAvatar)
 
-	r := newRoom(UseGravatar)
+	//r := newRoom(UseGravatar)
+
+	//r := newRoom(UseFileSystemAvatar)
+	r := newRoom()
+
 	// removable to turn off tracer
 	r.tracer = trace.New(os.Stdout)
 
@@ -76,7 +81,10 @@ func main() {
 	http.Handle("/login", &templateHandler{filename: "login.html"})
 	http.HandleFunc("/auth/", loginHandler)
 	http.Handle("/room", r)
-
+	http.Handle("/upload", &templateHandler{filename: "upload.html"})
+	http.HandleFunc("/uploader", uploaderHandler)
+	http.Handle("/avatars/",
+		http.StripPrefix("/avatars/", http.FileServer(http.Dir("./avatars"))))
 	http.HandleFunc("/logout", func(w http.ResponseWriter, r *http.Request) {
 		http.SetCookie(w, &http.Cookie{
 			Name:   "auth",
